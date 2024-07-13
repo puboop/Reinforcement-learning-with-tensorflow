@@ -21,7 +21,7 @@ class RL(object):
     def check_state_exist(self, state):
         if state not in self.q_table.index:
             # append new state to q table
-            self.q_table = self.q_table.append(
+            self.q_table = self.q_table._append(
                 pd.Series(
                     [0]*len(self.actions),
                     index=self.q_table.columns,
@@ -71,6 +71,8 @@ class SarsaTable(RL):
         self.check_state_exist(s_)
         q_predict = self.q_table.loc[s, a]
         if s_ != 'terminal':
+            # 如果下一个值没有呢？
+            # 那么就会踩坑，从而在下下一次就尽量去避免坑
             q_target = r + self.gamma * self.q_table.loc[s_, a_]  # next state is not terminal
         else:
             q_target = r  # next state is terminal
