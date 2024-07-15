@@ -64,7 +64,7 @@ class QLearningTable:
         """
         if state not in self.q_table.index:
             # append new state to q table
-            self.q_table = self.q_table._append(
+            self.q_table = self.q_table.append(
                 pd.Series(
                     [0]*len(self.actions),
                     index=self.q_table.columns,# series的索引为DataFrame的列名
