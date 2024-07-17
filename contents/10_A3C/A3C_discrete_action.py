@@ -114,13 +114,15 @@ class Worker(object):
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
-            s = self.env.reset()
+            # s = self.env.reset()
+            s = self.env.reset()[0]
             ep_r = 0
             while True:
                 # if self.name == 'W_0':
                 #     self.env.render()
                 a = self.AC.choose_action(s)
-                s_, r, done, info = self.env.step(a)
+                # s_, r, done, info = self.env.step(a)
+                s_, r, done, info, __ = self.env.step(a)
                 if done: r = -5
                 ep_r += r
                 buffer_s.append(s)

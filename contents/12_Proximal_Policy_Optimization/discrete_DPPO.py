@@ -115,7 +115,7 @@ class Worker(object):
     def work(self):
         global GLOBAL_EP, GLOBAL_RUNNING_R, GLOBAL_UPDATE_COUNTER
         while not COORD.should_stop():
-            s = self.env.reset()
+            s = self.env.reset()[0]
             ep_r = 0
             buffer_s, buffer_a, buffer_r = [], [], []
             for t in range(EP_LEN):
@@ -123,7 +123,8 @@ class Worker(object):
                     ROLLING_EVENT.wait()                        # wait until PPO is updated
                     buffer_s, buffer_a, buffer_r = [], [], []   # clear history buffer, use new policy to collect data
                 a = self.ppo.choose_action(s)
-                s_, r, done, _ = self.env.step(a)
+                # s_, r, done, _ = self.env.step(a)
+                s_, r, done, _, __ = self.env.step(a)
                 if done: r = -10
                 buffer_s.append(s)
                 buffer_a.append(a)

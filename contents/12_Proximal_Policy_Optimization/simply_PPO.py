@@ -121,18 +121,19 @@ class PPO(object):
         if s.ndim < 2: s = s[np.newaxis, :]
         return self.sess.run(self.v, {self.tfs: s})[0, 0]
 
-env = gym.make('Pendulum-v0').unwrapped
+env = gym.make('Pendulum-v1').unwrapped
 ppo = PPO()
 all_ep_r = []
 
 for ep in range(EP_MAX):
-    s = env.reset()
+    s = env.reset()[0]
     buffer_s, buffer_a, buffer_r = [], [], []
     ep_r = 0
     for t in range(EP_LEN):    # in one episode
         env.render()
         a = ppo.choose_action(s)
-        s_, r, done, _ = env.step(a)
+        # s_, r, done, _ = env.step(a)
+        s_, r, done, _, __ = env.step(a)
         buffer_s.append(s)
         buffer_a.append(a)
         buffer_r.append((r+8)/8)    # normalize reward, find to be useful

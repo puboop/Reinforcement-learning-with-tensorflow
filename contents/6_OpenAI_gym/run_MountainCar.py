@@ -10,13 +10,13 @@ gym: 0.8.0
 import gym
 from RL_brain import DeepQNetwork
 
-env = gym.make('MountainCar-v0')
+env = gym.make('MountainCar-v0') # 定义环境名
 env = env.unwrapped
 
-print(env.action_space)
-print(env.observation_space)
-print(env.observation_space.high)
-print(env.observation_space.low)
+print(env.action_space) # 查看这个环境中可用的 action 有多少个
+print(env.observation_space)    # 查看这个环境中可用的 state 的 observation 有多少个
+print(env.observation_space.high)   # 查看 observation 最高取值
+print(env.observation_space.low)    # 查看 observation 最低取值
 
 RL = DeepQNetwork(n_actions=3, n_features=2, learning_rate=0.001, e_greedy=0.9,
                   replace_target_iter=300, memory_size=3000,

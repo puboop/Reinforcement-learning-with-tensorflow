@@ -28,7 +28,7 @@ C_LR = 0.0002               # learning rate for critic
 MIN_BATCH_SIZE = 64         # minimum batch size for updating PPO
 UPDATE_STEP = 10            # loop update operation n-steps
 EPSILON = 0.2               # for clipping surrogate objective
-GAME = 'Pendulum-v0'
+GAME = 'Pendulum-v1'
 S_DIM, A_DIM = 3, 1         # state and action dimension
 
 
@@ -109,7 +109,8 @@ class Worker(object):
     def work(self):
         global GLOBAL_EP, GLOBAL_RUNNING_R, GLOBAL_UPDATE_COUNTER
         while not COORD.should_stop():
-            s = self.env.reset()
+            # s = self.env.reset()
+            s = self.env.reset()[0]
             ep_r = 0
             buffer_s, buffer_a, buffer_r = [], [], []
             for t in range(EP_LEN):
@@ -117,7 +118,8 @@ class Worker(object):
                     ROLLING_EVENT.wait()                        # wait until PPO is updated
                     buffer_s, buffer_a, buffer_r = [], [], []   # clear history buffer, use new policy to collect data
                 a = self.ppo.choose_action(s)
-                s_, r, done, _ = self.env.step(a)
+                # s_, r, done, _ = self.env.step(a)
+                s_, r, done, _, __ = self.env.step(a)
                 buffer_s.append(s)
                 buffer_a.append(a)
                 buffer_r.append((r + 8) / 8)                    # normalize reward, find to be useful

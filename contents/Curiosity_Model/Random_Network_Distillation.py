@@ -143,12 +143,13 @@ env = env.unwrapped
 dqn = CuriosityNet(n_a=3, n_s=2, lr=0.01, output_graph=False)
 ep_steps = []
 for epi in range(200):
-    s = env.reset()
+    s = env.reset()[0]
     steps = 0
     while True:
         # env.render()
         a = dqn.choose_action(s)
-        s_, r, done, info = env.step(a)
+        # s_, r, done, info = env.step(a)
+        s_, r, done, info, __ = env.step(a)
         dqn.store_transition(s, a, r, s_)
         dqn.learn()
         if done:

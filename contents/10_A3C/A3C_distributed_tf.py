@@ -125,13 +125,15 @@ def work(job_name, task_index, global_ep, lock, r_queue, global_running_r):
             total_step = 1
             buffer_s, buffer_a, buffer_r = [], [], []
             while (not sess.should_stop()) and (global_ep.value < 1000):
-                s = env.reset()
+                # s = env.reset()
+                s = env.reset()[0]
                 ep_r = 0
                 while True:
                     # if task_index:
                     #     env.render()
                     a = local_net.choose_action(s)
-                    s_, r, done, info = env.step(a)
+                    # s_, r, done, info = env.step(a)
+                    s_, r, done, info, __ = env.step(a)
                     if done: r = -5.
                     ep_r += r
                     buffer_s.append(s)

@@ -19,7 +19,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 
-GAME = 'Pendulum-v0'
+GAME = 'Pendulum-v1'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
 N_WORKERS = multiprocessing.cpu_count()
@@ -131,7 +131,8 @@ class Worker(object):
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
-            s = self.env.reset()
+            # s = self.env.reset()
+            s = self.env.reset()[0]
             ep_r = 0
             rnn_state = SESS.run(self.AC.init_state)    # zero rnn state at beginning
             keep_state = rnn_state.copy()       # keep rnn state for updating global net
@@ -140,7 +141,8 @@ class Worker(object):
                     self.env.render()
 
                 a, rnn_state_ = self.AC.choose_action(s, rnn_state)  # get the action and next rnn state
-                s_, r, done, info = self.env.step(a)
+                # s_, r, done, info = self.env.step(a)
+                s_, r, done, info, __ = self.env.step(a)
                 done = True if ep_t == MAX_EP_STEP - 1 else False
 
                 ep_r += r

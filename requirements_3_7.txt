@@ -1,0 +1,4 @@
+tensorflow==1.15.5
+gym==0.26.2
+matplotlib
+pandas==0.23.1
