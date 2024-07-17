@@ -12,6 +12,8 @@ pip install -r requirements.txt
 
 从10_A3C往后的文件夹，需要使用requirements_3_7.txt依赖，Python 3.7.16 
 
+tensorflow 图形化查看神经网络：`tensorboard --logdir logs`
+
 # Reinforcement Learning Methods and Tutorials
 
 In these tutorials for reinforcement learning, it covers from the basic RL algorithms to advanced algorithms developed recent years.
