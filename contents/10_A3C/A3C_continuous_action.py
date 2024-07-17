@@ -19,7 +19,7 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 
-GAME = 'Pendulum-v0'
+GAME = 'Pendulum-v1'
 OUTPUT_GRAPH = True
 LOG_DIR = './log'
 N_WORKERS = multiprocessing.cpu_count()

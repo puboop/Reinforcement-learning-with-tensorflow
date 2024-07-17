@@ -28,7 +28,7 @@ C_LR = 0.0001               # learning rate for critic
 MIN_BATCH_SIZE = 64         # minimum batch size for updating PPO
 UPDATE_STEP = 15            # loop update operation n-steps
 EPSILON = 0.2               # for clipping surrogate objective
-GAME = 'CartPole-v0'
+GAME = 'CartPole-v1'
 
 env = gym.make(GAME)
 S_DIM = env.observation_space.shape[0]

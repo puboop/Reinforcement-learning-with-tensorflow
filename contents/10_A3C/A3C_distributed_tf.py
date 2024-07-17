@@ -20,7 +20,7 @@ ENTROPY_BETA = 0.001
 LR_A = 0.001    # learning rate for actor
 LR_C = 0.001    # learning rate for critic
 
-env = gym.make('CartPole-v0')
+env = gym.make('CartPole-v1')
 N_S = env.observation_space.shape[0]
 N_A = env.action_space.n
 
