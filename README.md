@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 # 项目介绍
 
-从10_A3C往后的文件夹，需要使用requirements_3_7.txt依赖，python 
+从10_A3C往后的文件夹，需要使用requirements_3_7.txt依赖，Python 3.7.16 
 
 # Reinforcement Learning Methods and Tutorials
 
