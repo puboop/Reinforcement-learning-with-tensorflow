@@ -29,8 +29,8 @@ GLOBAL_NET_SCOPE = 'Global_Net'
 UPDATE_GLOBAL_ITER = 5
 GAMMA = 0.9
 ENTROPY_BETA = 0.01
-LR_A = 0.0001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+LR_A = 0.0001  # learning rate for actor
+LR_C = 0.001  # learning rate for critic
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 
@@ -44,11 +44,11 @@ A_BOUND = [env.action_space.low, env.action_space.high]
 class ACNet(object):
     def __init__(self, scope, globalAC=None):
 
-        if scope == GLOBAL_NET_SCOPE:   # get global network
+        if scope == GLOBAL_NET_SCOPE:  # get global network
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
                 self.a_params, self.c_params = self._build_net(scope)[-2:]
-        else:   # local net, calculate losses
+        else:  # local net, calculate losses
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
                 self.a_his = tf.placeholder(tf.float32, [None, N_A], 'A')
@@ -88,24 +88,35 @@ class ACNet(object):
 
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
-        with tf.variable_scope('critic'):   # only critic controls the rnn update
+        with tf.variable_scope('critic'):  # only critic controls the rnn update
             cell_size = 64
+            # 扩展输入张量的维度，以适应 RNN 的输入格式
             s = tf.expand_dims(self.s, axis=1,
                                name='timely_input')  # [time_step, feature] => [time_step, batch, feature]
+            # 创建一个基本的 RNN 单元，隐层大小为 64
             rnn_cell = tf.contrib.rnn.BasicRNNCell(cell_size)
+            # 定义 RNN 的初始状态
             self.init_state = rnn_cell.zero_state(batch_size=1, dtype=tf.float32)
+            # 运行动态 RNN，处理输入数据并返回输出和最终状态
             outputs, self.final_state = tf.nn.dynamic_rnn(
                 cell=rnn_cell, inputs=s, initial_state=self.init_state, time_major=True)
+            # 将 RNN 的输出展平为二维张量
             cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
+            # 添加一个隐藏层，使用 ReLU6 激活函数
             l_c = tf.layers.dense(cell_out, 50, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
 
         with tf.variable_scope('actor'):  # state representation is based on critic
+            # 添加一个隐藏层，使用 ReLU6 激活函数
             l_a = tf.layers.dense(cell_out, 80, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            # 输出动作的均值 mu，使用 tanh 激活函数
             mu = tf.layers.dense(l_a, N_A, tf.nn.tanh, kernel_initializer=w_init, name='mu')
+            # 输出动作的方差 sigma，使用 softplus 激活函数
             sigma = tf.layers.dense(l_a, N_A, tf.nn.softplus, kernel_initializer=w_init, name='sigma')
+        # 分别获取 Actor 和 Critic 网络中所有可训练的变量，这些变量将用于优化和更新网络参数
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
+        # 返回 Actor 网络的输出（mu 和 sigma）、Critic 网络的输出（v），以及 Actor 和 Critic 网络的参数（a_params 和 c_params）
         return mu, sigma, v, a_params, c_params
 
     def update_global(self, feed_dict):  # run by a local
@@ -134,8 +145,8 @@ class Worker(object):
             # s = self.env.reset()
             s = self.env.reset()[0]
             ep_r = 0
-            rnn_state = SESS.run(self.AC.init_state)    # zero rnn state at beginning
-            keep_state = rnn_state.copy()       # keep rnn state for updating global net
+            rnn_state = SESS.run(self.AC.init_state)  # zero rnn state at beginning
+            keep_state = rnn_state.copy()  # keep rnn state for updating global net
             for ep_t in range(MAX_EP_STEP):
                 if self.name == 'W_0':
                     self.env.render()
@@ -148,32 +159,33 @@ class Worker(object):
                 ep_r += r
                 buffer_s.append(s)
                 buffer_a.append(a)
-                buffer_r.append((r+8)/8)    # normalize
+                buffer_r.append((r + 8) / 8)  # normalize
 
-                if total_step % UPDATE_GLOBAL_ITER == 0 or done:   # update global and assign to local net
+                if total_step % UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     if done:
-                        v_s_ = 0   # terminal
+                        v_s_ = 0  # terminal
                     else:
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: s_[np.newaxis, :], self.AC.init_state: rnn_state_})[0, 0]
                     buffer_v_target = []
-                    for r in buffer_r[::-1]:    # reverse buffer r
+                    for r in buffer_r[::-1]:  # reverse buffer r
                         v_s_ = r + GAMMA * v_s_
                         buffer_v_target.append(v_s_)
                     buffer_v_target.reverse()
 
-                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(buffer_v_target)
+                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(
+                        buffer_v_target)
 
                     feed_dict = {
-                        self.AC.s: buffer_s,
-                        self.AC.a_his: buffer_a,
-                        self.AC.v_target: buffer_v_target,
+                        self.AC.s         : buffer_s,
+                        self.AC.a_his     : buffer_a,
+                        self.AC.v_target  : buffer_v_target,
                         self.AC.init_state: keep_state,
                     }
 
                     self.AC.update_global(feed_dict)
                     buffer_s, buffer_a, buffer_r = [], [], []
                     self.AC.pull_global()
-                    keep_state = rnn_state_.copy()   # replace the keep_state as the new initial rnn state_
+                    keep_state = rnn_state_.copy()  # replace the keep_state as the new initial rnn state_
 
                 s = s_
                 rnn_state = rnn_state_  # renew rnn state
@@ -188,9 +200,10 @@ class Worker(object):
                         self.name,
                         "Ep:", GLOBAL_EP,
                         "| Ep_r: %i" % GLOBAL_RUNNING_R[-1],
-                          )
+                    )
                     GLOBAL_EP += 1
                     break
+
 
 if __name__ == "__main__":
     SESS = tf.Session()
@@ -202,7 +215,7 @@ if __name__ == "__main__":
         workers = []
         # Create worker
         for i in range(N_WORKERS):
-            i_name = 'W_%i' % i   # worker name
+            i_name = 'W_%i' % i  # worker name
             workers.append(Worker(i_name, GLOBAL_AC))
 
     COORD = tf.train.Coordinator()
@@ -225,4 +238,3 @@ if __name__ == "__main__":
     plt.xlabel('step')
     plt.ylabel('Total moving reward')
     plt.show()
-

@@ -71,18 +71,28 @@ class ACNet(object):
                     entropy = normal_dist.entropy()  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
                     self.a_loss = tf.reduce_mean(-self.exp_v)
-
+                # 状态值获取
                 with tf.name_scope('choose_a'):  # use local params to choose action
                     self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=[0, 1]), A_BOUND[0], A_BOUND[1])
+                # TensorFlow 中定义了计算 Actor 和 Critic 网络梯度的操作
                 with tf.name_scope('local_grad'):
+                    """
+                    tf.gradients：用于计算给定损失函数（或目标函数）相对于某些变量的梯度。
+                    在这里，计算的是 self.a_loss（Actor 网络的损失）相对于 self.a_params（Actor 网络的参数）的梯度。
+                    self.a_loss：Actor 网络的损失函数，通常用来衡量策略的好坏。
+                    self.a_params：Actor 网络的可训练参数
+                    返回的是一个梯度列表，其中每个元素是 self.c_loss 对应于 self.c_params 中每个变量的梯度。这些梯度用于更新 Critic 网络的参数，以优化价值函数
+                    """
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
                     self.c_grads = tf.gradients(self.c_loss, self.c_params)
-
+            # 与主线程交互流程 参数更新与参数获取
             with tf.name_scope('sync'):
                 with tf.name_scope('pull'):
+                    # 软连接参数获取
                     self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
                     self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
                 with tf.name_scope('push'):
+                    # 软连接参数更新
                     self.update_a_op = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
                     self.update_c_op = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
 
@@ -135,17 +145,21 @@ class Worker(object):
                 ep_r += r
                 buffer_s.append(s)
                 buffer_a.append(a)
+                # 标准化奖励
                 buffer_r.append((r + 8) / 8)  # normalize
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:  # update global and assign to local net
                     if done:
                         v_s_ = 0  # terminal
                     else:
+                        # 网络学习
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: s_[np.newaxis, :]})[0, 0]
                     buffer_v_target = []
                     for r in buffer_r[::-1]:  # reverse buffer r
+                        # 奖励累加
                         v_s_ = r + GAMMA * v_s_
                         buffer_v_target.append(v_s_)
+                    # 奖励列表再次反转
                     buffer_v_target.reverse()
 
                     buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(
@@ -155,8 +169,10 @@ class Worker(object):
                         self.AC.a_his   : buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
+                    # 进行软连接参数本地更新
                     self.AC.update_global(feed_dict)
                     buffer_s, buffer_a, buffer_r = [], [], []
+                    # 软连接参数获取
                     self.AC.pull_global()
 
                 s = s_
@@ -181,6 +197,7 @@ if __name__ == "__main__":
     with tf.device("/cpu:0"):
         OPT_A = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')
         OPT_C = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
+        # 先初始化一个全局神经网络，用于收集所有子神经网络的参数
         GLOBAL_AC = ACNet(GLOBAL_NET_SCOPE)  # we only need its params
         workers = []
         # Create worker
