@@ -34,6 +34,11 @@ env = env.unwrapped
 N_F = env.observation_space.shape[0]
 N_A = env.action_space.n
 
+"""
+Actor 网络负责根据当前状态选择动作，并根据 Critic 的反馈调整策略
+"""
+
+
 
 class Actor(object):
     def __init__(self, sess, n_features, n_actions, lr=0.001):
@@ -55,28 +60,33 @@ class Actor(object):
 
             self.acts_prob = tf.layers.dense(
                 inputs=l1,
-                units=n_actions,    # output units
+                units=n_actions,    # output units 输出的神经元个数为特征的个数
                 activation=tf.nn.softmax,   # get action probabilities
                 kernel_initializer=tf.random_normal_initializer(0., .1),  # weights
                 bias_initializer=tf.constant_initializer(0.1),  # biases
                 name='acts_prob'
             )
-
+        # 定义损失函数层
         with tf.variable_scope('exp_v'):
-            log_prob = tf.log(self.acts_prob[0, self.a])
+            log_prob = tf.log(self.acts_prob[0, self.a]) # 计算选择动作 a 的对数概率
+            # 将对数概率乘以 TD 误差，计算损失函数
+            # TD 误差指导损失，使得策略朝着更有利于获得更高奖励的方向更新
             self.exp_v = tf.reduce_mean(log_prob * self.td_error)  # advantage (TD_error) guided loss
 
         with tf.variable_scope('train'):
+            # 使用Adam优化器最小化负的期望价值 -self.exp_v，这相当于最大化 self.exp_v，即最大化期望奖励
             self.train_op = tf.train.AdamOptimizer(lr).minimize(-self.exp_v)  # minimize(-exp_v) = maximize(exp_v)
 
     def learn(self, s, a, td):
         s = s[np.newaxis, :]
         feed_dict = {self.s: s, self.a: a, self.td_error: td}
+        # 训练与计算损失函数
         _, exp_v = self.sess.run([self.train_op, self.exp_v], feed_dict)
         return exp_v
 
     def choose_action(self, s):
         s = s[np.newaxis, :]
+        # 计算选择的动作
         probs = self.sess.run(self.acts_prob, {self.s: s})   # get probabilities for all actions
         return np.random.choice(np.arange(probs.shape[1]), p=probs.ravel())   # return a int
 
@@ -111,6 +121,7 @@ class Critic(object):
             )
 
         with tf.variable_scope('squared_TD_error'):
+            # 计算 TD 误差，即即时奖励加上折扣后的下一状态价值减去当前状态价值。
             self.td_error = self.r + GAMMA * self.v_ - self.v
             self.loss = tf.square(self.td_error)    # TD_error = (r+gamma*V_next) - V_eval
         with tf.variable_scope('train'):
@@ -118,8 +129,9 @@ class Critic(object):
 
     def learn(self, s, r, s_):
         s, s_ = s[np.newaxis, :], s_[np.newaxis, :]
-
+        # 计算评估值
         v_ = self.sess.run(self.v, {self.s: s_})
+        # 根据评估值计算td_error与训练值
         td_error, _ = self.sess.run([self.td_error, self.train_op],
                                           {self.s: s, self.v_: v_, self.r: r})
         return td_error
@@ -149,9 +161,13 @@ for i_episode in range(MAX_EPISODE):
         if done: r = -20
 
         track_r.append(r)
-
+        # 优先训练观察者
         td_error = critic.learn(s, r, s_)  # gradient = grad[r + gamma * V(s_) - V(s)]
+        # 再训练执行者
         actor.learn(s, a, td_error)     # true_gradient = grad[logPi(s,a) * td_error]
+        """
+        根据评估者的评估，来选择相应的action动作
+        """
 
         s = s_
         t += 1
