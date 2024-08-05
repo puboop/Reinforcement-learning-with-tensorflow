@@ -8,6 +8,8 @@ python 3.5.6 所以[pycharm的版本](https://blog.csdn.net/rrkifk/article/detai
 pip install -r requirements.txt
 ```
 
+[github仓库](https://github.com/puboop/Reinforcement-learning-with-tensorflow)
+
 # 项目介绍
 
 从10_A3C往后的文件夹，需要使用requirements_3_7.txt依赖，Python 3.7.16 
